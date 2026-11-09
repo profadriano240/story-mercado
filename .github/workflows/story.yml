@@ -1,5 +1,7 @@
 name: Story de mercado
 on:
+  schedule:
+    - cron: "30 10 * * 1-5" # 7h30 em Brasília (UTC-3), seg-sex
   workflow_dispatch:
     inputs:
       publicar:
@@ -15,12 +17,29 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - run: pip install -q pillow
-      - run: python3 story.py gerar
+      - name: Checar token e pregão
+        id: checa
+        env:
+          TEM_TOKEN: ${{ secrets.IG_ACCESS_TOKEN != '' }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$TEM_TOKEN" != true ]; then
+            echo "::notice::Sem o secret IG_ACCESS_TOKEN: agendamento pulado."
+            echo "seguir=nao" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if ! python3 story.py pregao; then
+            echo "::notice::Hoje não tem pregão na B3: sem Story."
+            echo "seguir=nao" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "seguir=sim" >> "$GITHUB_OUTPUT"
+      - if: steps.checa.outputs.seguir == 'sim'
+        run: pip install -q pillow
+      - if: steps.checa.outputs.seguir == 'sim'
+        run: python3 story.py gerar
       - name: Guardar imagem pública
         id: imagem
+        if: steps.checa.outputs.seguir == 'sim'
         run: |
-          [ -f saida/story.jpg ] || { echo "tem=nao" >> "$GITHUB_OUTPUT"; exit 0; }
+          [ -n "$(git status --porcelain saida/story.jpg)" ] || { echo "tem=nao" >> "$GITHUB_OUTPUT"; exit 0; }
           git config user.name story-bot
           git config user.email story-bot@users.noreply.github.com
           git add saida/story.jpg

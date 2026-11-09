@@ -1,5 +1,6 @@
 import unittest
-from story import percentual, titulo
+import datetime as dt
+from story import percentual, tem_pregao, titulo
 
 
 class Testes(unittest.TestCase):
@@ -14,6 +15,11 @@ class Testes(unittest.TestCase):
     def test_percentual(self):
         self.assertEqual(percentual(2.156), "+2,2%")
         self.assertEqual(percentual(-0.05), "−0,05%")
+
+    def test_pregao(self):
+        self.assertTrue(tem_pregao(dt.date(2026, 11, 9)))
+        self.assertFalse(tem_pregao(dt.date(2026, 11, 20)))
+        self.assertFalse(tem_pregao(dt.date(2026, 11, 14)))
 
 
 unittest.main()

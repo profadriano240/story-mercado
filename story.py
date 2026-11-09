@@ -3,6 +3,7 @@
 
 Uso:
   story.py gerar             escreve saida/story.jpg (ou sai sem nada em feriado)
+  story.py pregao            sai com código 0 se hoje tem pregão na B3, 1 se não
   story.py publicar <url>    publica a imagem da URL pública como Story
 """
 import datetime as dt
@@ -48,9 +49,21 @@ def baixar(url, cabecalhos=None, tentativas=3):
             time.sleep(5 * tentativa)
 
 
+# Cotação mais velha que isso indica API parada (cobre fim de semana + feriado).
+IDADE_MAXIMA_H = 100
+
+
 def cotacoes_site():
     itens = json.loads(baixar(API_SITE))["itens"]
     por_nome = {item["nome"]: item for item in itens}
+    agora = time.time()
+    for nome in ("Brent", "Dólar"):
+        item = por_nome[nome]
+        if item["preco"] <= 0:
+            raise ValueError(f"{nome} sem preço válido: {item}")
+        idade = (agora - item["hora"]) / 3600
+        if idade > IDADE_MAXIMA_H:
+            raise ValueError(f"{nome} parado há {idade:.0f} h: {item}")
     return por_nome["Brent"], por_nome["Dólar"]
 
 
@@ -144,6 +157,10 @@ def renderizar(html):
         imagem.save(SAIDA, quality=92)
 
 
+def tem_pregao(dia):
+    return dia.weekday() < 5 and dia.isoformat() not in FERIADOS_B3
+
+
 def gerar():
     agora = dt.datetime.now(FUSO)
     if agora.date().isoformat() in FERIADOS_B3:
@@ -156,7 +173,9 @@ def gerar():
 
 
 def graph(caminho, dados=None):
-    token = os.environ["IG_ACCESS_TOKEN"]
+    token = os.environ.get("IG_ACCESS_TOKEN")
+    if not token:
+        sys.exit("Falta o secret IG_ACCESS_TOKEN no repositório.")
     if dados is None:
         separador = "&" if "?" in caminho else "?"
         url, corpo = f"{GRAPH}/{caminho}{separador}access_token={token}", None
@@ -201,6 +220,8 @@ def publicar(url):
 if __name__ == "__main__":
     if sys.argv[1:2] == ["gerar"]:
         gerar()
+    elif sys.argv[1:2] == ["pregao"]:
+        sys.exit(0 if tem_pregao(dt.datetime.now(FUSO).date()) else 1)
     elif sys.argv[1:2] == ["publicar"] and len(sys.argv) == 3:
         publicar(sys.argv[2])
     else:
