@@ -9,7 +9,7 @@ Gera e publica o Story diário de mercado do @impostodabolsa: Brent (US$/barril)
 - `python3 story.py pregao` sai com 0 se hoje tem pregão na B3.
 - `python3 teste_story.py` roda os testes.
 
-O workflow `.github/workflows/story.yml` roda seg-sex às 10:30 UTC (7h30 em Brasília). O GitHub costuma atrasar crons em alguns minutos. O job agendado:
+O workflow `.github/workflows/story.yml` roda seg-sex às 10:07 UTC (7h07 em Brasília). Minuto fora do :00/:30 porque o GitHub atrasa ou pula crons nos horários cheios; em 10/11/2026 o das 10:30 não disparou. O job agendado:
 
 1. pula sem erro enquanto o secret `IG_ACCESS_TOKEN` não existir;
 2. pula sem erro em feriado da B3 (lista `FERIADOS_B3` em `story.py`, conferir no fim de cada ano);

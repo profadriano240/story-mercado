@@ -1,7 +1,7 @@
 name: Story de mercado
 on:
   schedule:
-    - cron: "30 10 * * 1-5" # 7h30 em Brasília (UTC-3), seg-sex
+    - cron: "7 10 * * 1-5" # 7h07 em Brasília (UTC-3), seg-sex
   workflow_dispatch:
     inputs:
       publicar:
