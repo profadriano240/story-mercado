@@ -1,7 +1,7 @@
 name: Story de mercado
 on:
   schedule:
-    - cron: "7 10 * * 1-5" # 7h07 em Brasília (UTC-3), seg-sex
+    - cron: "30 10 * * 1-5" # 7h30 em Brasília (UTC-3), seg-sex; reserva do disparo externo (cron-job.org)
   workflow_dispatch:
     inputs:
       publicar:
@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 30
       - name: Checar token e pregão
         id: checa
         env:
@@ -24,6 +26,10 @@ jobs:
         run: |
           if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$TEM_TOKEN" != true ]; then
             echo "::notice::Sem o secret IG_ACCESS_TOKEN: agendamento pulado."
+            echo "seguir=nao" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if git log -30 --format=%s | grep -qx "Story $(TZ=America/Sao_Paulo date +%F)"; then
+            echo "::notice::Story de hoje já foi publicado: nada a fazer."
             echo "seguir=nao" >> "$GITHUB_OUTPUT"; exit 0
           fi
           if ! python3 story.py pregao; then
